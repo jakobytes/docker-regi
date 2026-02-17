@@ -1,0 +1,499 @@
+<html>
+<head>
+<title>{{ data['poem'].smd.title }} — Runoregi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" href="./static/css/jquery.dataTables.css">
+<link rel="stylesheet" href="./static/css/style.css">
+
+<script lang="javascript" src="./static/js/jquery.min.js"></script>
+<script type="text/javascript" charset="utf8" src="./static/js/jquery.dataTables.js"></script>
+<script lang="javascript" src="./static/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@simonwep/selection-js/dist/selection.min.js"></script>
+</head>
+
+<body>
+
+{% if data['maintenance'] %}
+<div class="alert alert-warning" role="alert">
+<b>Warning!</b> A database update is ongoing. Some pages might not
+function properly.
+</div>
+{% endif %}
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/" title="to index">
+   <span class="glyphicon glyphicon-home"></span>
+  </a></li>
+</ul>
+
+<div class="page-header">
+<h1 style="margin-left: 20px;">{{ data['poem'].smd.title }}</h1>
+</div>
+
+<div class="container-fluid">
+<div class="row">
+<div class="col-md-2">
+
+<div class="panel panel-primary">
+<div class="panel-body">
+<p>
+<span class="glyphicon glyphicon-tag" aria-hidden="true" title="poem ID"></span>
+  {{ data['poem'].nro }}<br/>
+{% if data['poem'].smd.place_lst %}
+<span class="glyphicon glyphicon-map-marker" aria-hidden="true" title="place"></span>
+  {% for pl in data['poem'].smd.place_lst %}
+  <a href="/poemlist?source=place&id={{ pl.county_id }}">{{ pl.county_name }}</a>{% if pl.parish_name is not none %} — <a href="/poemlist?source=place&id={{ pl.parish_id }}">{{ pl.parish_name }}</a>{% endif %}{% if loop.index0 < data['poem'].smd.place_lst | length - 1 %}; {% endif %}
+  {% endfor %}<br/>
+{% endif %}
+{% if data['poem'].smd.collector_lst %}
+<span class="glyphicon glyphicon-user" aria-hidden="true" title="collector"></span>
+  {% for col in data['poem'].smd.collector_lst %}
+  <a href="/poemlist?source=collector&id={{ col.id }}">{{ col.name }}</a>{% if loop.index0 < data['poem'].smd.collector_lst | length - 1 %}; {% endif %}
+  {% endfor %}<br/>
+{% endif %}
+{% if data['poem'].smd.year is not none %}
+<span class="glyphicon glyphicon-calendar" aria-hidden="true" title="year"></span>
+  {{ data['poem'].smd.year }}
+{% endif %}
+</p>
+
+{% if data['poem'].duplicates %}
+<p>
+<b>Duplicates:</b>
+{% for nro in data['poem'].duplicates %}
+<a href="/poem?nro={{ nro }}">{{ data['related'][nro].smd.title }}</a>
+{% endfor %}
+</p>
+{% endif %}
+{% if data['poem'].parents %}
+<p>
+<b>Duplicate of:</b>
+{% for nro in data['poem'].parents %}
+<a href="/poem?nro={{ nro }}">{{ data['related'][nro].smd.title }}</a>
+{% endfor %}
+</p>
+{% endif %}
+</div>
+</div>
+
+
+{% if data['poem'].type_tree %}
+<div class="panel panel-primary">
+<div class="panel-heading"><h2 class="panel-title">Types</h2></div>
+<div class="panel-body">
+<p style="line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+{% for line in data['poem'].type_tree %}
+{{ line.prefix | join('\u2003') }} {% if line.is_minor %}*{% endif %}<a href="/poemlist?source=type&id={{ line.type_id }}" title="{{ data['types'][line.type_id].name }}">{{ data['types'][line.type_id].name }}</a><br/>
+{% endfor %}
+</p>
+</div>
+</div>
+{% endif %}
+
+{% if data['poem'].meta %}
+<div class="panel panel-primary">
+<div class="panel-heading"><h2 class="panel-title">Metadata</h2></div>
+<div class="panel-body">
+{% for key, val in data['poem'].meta.items() %}
+<b>{{ key }}:</b> {{ val | safe }}<br/>
+{% endfor %}
+</div>
+</div>
+{% endif %}
+
+<p></p>
+
+</div>
+
+<div class="col-md-7">
+<div class="panel panel-primary">
+<div class="panel-body">
+
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" class="hover-text">
+   <span class="glyphicon glyphicon-info-sign"></span>
+   <div class="tooltip-text">
+   <p>The <b>colored bar</b> next to the poem text shows the amount of similar
+   verses found in the corpus. More intensive colors represent higher
+   numbers. Click on the bar to see the verse cluster.</p>
+   <p>In the space between the colored bar and the poem text, which contains
+   verse numbers, you can select verses for <b>similar passage search</b>
+   by dragging the mouse with left button pressed. This will trigger a
+   search for similar passages, which contain verses from the same
+   clusters as the selected ones.</p>
+   <p>The <b>shared verses matrix</b> represents poems that contain
+   verses from the same clusters as the poem shown here. The columns
+   represent poems and colored cells the presence of a verse that match
+   the corresponding verse in the shown poem (not necessarily in the
+   same order). Click on the colored cells to see an alignment view.</p>
+   </div>
+  </a></li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-list-alt"></span>
+      Export as <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+    <li role="presentation"><a href="{{ links['txt'] }}">Text</a></li>
+    <li role="presentation"><a href="{{ links['xml'] }}">XML</a></li>
+    </ul>
+    <li role="presentation" class="dropdown">
+      <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+        Clustering: {{ data['clusterings'][args['clustering']][1] }} <span class="caret"></span>
+      </a>
+      <ul class="dropdown-menu">
+      {% for c in data['clusterings'] %}
+      <li role="presentation"><a href="{{ links['clustering'][c[0]] }}" title="{{ c[2] }}">{{ c[1] }}</a></li>
+      {% endfor %}
+      </ul>
+    </li>
+  {% if args['show_shared_verses'] %}
+  <li role="presentation"><a role="button" href="{{ links['-show_shared_verses'] }}" title="to index">
+   <span class="glyphicon glyphicon-cog"></span>
+   Hide shared verses matrix
+  </a></li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+   <span class="glyphicon glyphicon-cog"></span>
+      Matrix showing {{ data['linked_poems'] | length }} / {{ data['poems_sharing_verses'] }} poems <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+    {% for val in links['max_similar'] %}
+    <li role="presentation"><a href="{{ links['max_similar'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+    </ul>
+  </li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+   <span class="glyphicon glyphicon-cog"></span>
+      Weighting: {{ args['sim_order'] }} <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+    {% for val in links['sim_order'] %}
+    <li role="presentation"><a href="{{ links['sim_order'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+    </ul>
+  </li>
+  {% else %}
+  <li role="presentation"><a role="button" href="{{ links['+show_shared_verses'] }}" title="to index">
+   <span class="glyphicon glyphicon-cog"></span>
+   Show shared verses matrix
+  </a></li>
+  {% endif %}
+</ul>
+
+<div style="max-width: 100%; overflow-x: scroll;">
+<table>
+  {% for v in data['poem'].text %}
+  <tr>
+    {% if v.v_type == "V" %}
+      <td{%if args['show_shared_verses'] %} class="poem-view-freqbar"{% endif %} bgcolor="{{ data['colors'][v.clust_freq] }}">
+        <a name="{{ v.pos }}" href="/verse?nro={{ data['poem'].nro }}&pos={{ v.pos }}{% if args['clustering'] > 0 %}&clustering={{ args['clustering'] }}{% endif %}" title="{{ v.clust_freq }}" class="cn">&nbsp;&nbsp;&nbsp;
+        </a>
+      </td>
+      <td align="right" class="verse_id{%if args['show_shared_verses'] %} poem-view-linenumber{% endif %}" id="{{ v.pos }}">&ensp;<sup><small>{{ v.pos }}&ensp;</small></sup></td>
+      <td{%if args['show_shared_verses'] %}  class="poem-view-text"{% endif %}>
+      {% if v.pos in args['hl'] %}
+        <b>{{ v.text_rendered | safe }}</b>
+      {% else %}
+        {{ v.text_rendered | safe }}
+      {% endif %}</td>
+    {% else %}
+      {% if v.v_type == "L" %}
+      <td></td><td></td><td{%if args['show_shared_verses'] %} class="poem-view-text"{% endif %}><small><i>{{ v.text_rendered | safe }}</i></small></td>
+      {% elif v.v_type == "K" %}
+      <td></td><td></td><td{%if args['show_shared_verses'] %} class="poem-view-text"{% endif %}><small>{{ v.text_rendered | safe }}</small></td>
+      {% elif v.v_type == "CPT" %}
+      <td></td><td></td><td{%if args['show_shared_verses'] %} class="poem-view-text"{% endif %} align="center">
+        <h3>{{ v.text_rendered | safe }}</h3>
+      </td>
+      {% else %}
+      <td></td><td></td><td{%if args['show_shared_verses'] %} class="poem-view-text"{% endif %}>
+        <small style="color: gray;">{{ v.text_rendered | safe }}</small>
+      </td>
+      {% endif %}
+    {% endif %}
+    <td style="white-space: nowrap">
+    {% if args['show_shared_verses'] %}
+    {% for p2 in data['linked_poems'] %}
+        {% if v.clust_id in data['verse_poems'] and p2 in data['verse_poems'][v.clust_id] %}
+            <a href="/poemdiff?nro1={{ data['poem'].nro }}&nro2={{ p2 }}" class="c{{ loop.index % 13}}" title="{{ p2 }}">&nbsp;&nbsp;</a>
+        {% else %}
+            <span class="cn">&nbsp;&nbsp</span>
+        {% endif %}
+    {%  endfor %}
+    {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  <tr><td colspan="5"><hr/></td></tr>
+  <tr><td></td><td></td>
+    <td colspan="3" style="word-wrap: break-word; max-width: 500px">
+    <small>
+    {% for r in data['poem'].refs %}
+    {% if r.num is not none and r.num > 0 %}
+    <a name="fn-{{ r.num }}"><sup>{{ r.num }}</sup></a>
+    {% endif %}
+    {{ r.text | safe }}<br/>
+    {% endfor %}
+    </small>
+  </td></tr>
+</table>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+
+{% if data['sim'] %}
+<div class="panel panel-primary">
+<div class="panel-heading">
+<div class="pull-right hover-text">
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<div class="tooltip-text tooltip-text-right">
+<p>The similar poems were computed automatically using an optimized weighted
+alignment algorithm
+(<a target="_blank" href="https://aclanthology.org/2022.nlp4dh-1.13/">Janicki, 2022</a>)
+on sequences of verses.</p>
+</div>
+</div>
+<h2 class="panel-title">Similar poems</h2>
+</div>
+<div class="panel-body">
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" data-toggle="modal" data-target="#myModal" title="Details">
+   <span class="glyphicon glyphicon-fullscreen"></span>
+  </a></li>
+  <li role="presentation"><a role="button" href="/poemnet?nro={{ data['poem'].nro }}">
+   <span class="glyphicon glyphicon-cloud"></span> Network
+  </a></li>
+  <li role="presentation"><a role="button" href="/dendrogram?source=cluster&nro={{ data['poem'].nro }}">
+   <span class="glyphicon glyphicon-tree-conifer"></span>
+   Cluster #{{ data['poem'].p_clust_id }} ({{ data['poem'].p_clust_size }} poems)
+  </a></li>
+</ul>
+
+<div class="table-responsive" style="max-height: 300px; overflow-y: scroll;">
+<table class="table table-condensed">
+{% for nro, s in data['sim'] | sort(attribute=1, reverse=True) %}
+  <tr>
+    <td class="poem_id">
+    <a href="/poemdiff?nro1={{ data['poem'].nro }}&nro2={{ nro }}">{{ data['related'][nro].smd.title }}</a>
+    </td>
+    <td><small>{{ (s*100) | int }}&nbsp;%</small></td>
+    <td>
+     <div class="progress" style="width: 100px; display: inline-block">
+       <div class="progress-bar" role="progressbar" aria-valuenow="{{ (s*100) | int }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ (s*100) | int }}%;">
+       </div>
+     </div>
+   </td>
+  </tr>
+  {% endfor %}
+</table>
+</div> <!-- table-responsive -->
+</div> <!-- panel-body -->
+</div> <!-- panel -->
+{% endif %}
+
+{% if data['sim_right'] %}
+<div class="panel panel-primary">
+<div class="panel-heading">
+<h2 class="panel-title">Contains poems</h2>
+</div>
+<div class="panel-body">
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/multidiff?nro={{ data['poem'].nro }},{{ data['sim_right'] | map(attribute=0) | join(',') }}">
+   <span class="glyphicon glyphicon-duplicate"></span> Compare all
+  </a></li>
+</ul>
+
+<div class="table-responsive" style="max-height: 300px; overflow-y: scroll;">
+<table class="table table-condensed">
+{% for nro, s in data['sim_right'] | sort(attribute=1, reverse=True) %}
+  <tr>
+    <td class="poem_id">
+    <a href="/poemdiff?nro1={{ data['poem'].nro }}&nro2={{ nro }}">{{ data['related'][nro].smd.title }}</a>
+      &ensp;
+    </td>
+    <td><small>{{ (s*100) | int }}&nbsp;%</small></td>
+    <td>
+     <div class="progress" style="width: 100px; display: inline-block">
+       <div class="progress-bar" role="progressbar" aria-valuenow="{{ (s*100) | int }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ (s*100) | int }}%;">
+       </div>
+     </div>
+   </td>
+  </tr>
+  {% endfor %}
+</table>
+</div> <!-- table-responsive -->
+</div> <!-- panel-body -->
+</div> <!-- panel -->
+{% endif %}
+
+{% if data['sim_left'] %}
+<div class="panel panel-primary">
+ <div class="panel-heading">
+ <h2 class="panel-title">Contained in poems</h2>
+ </div>
+<div class="panel-body">
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/multidiff?nro={{ data['poem'].nro }},{{ data['sim_left'] | map(attribute=0) | join(',') }}">
+   <span class="glyphicon glyphicon-duplicate"></span> Compare all
+  </a></li>
+</ul>
+
+<div class="table-responsive" style="max-height: 300px; overflow-y: scroll;">
+<table class="table table-condensed">
+{% for nro, s in data['sim_left'] | sort(attribute=1, reverse=True) %}
+  <tr>
+    <td class="poem_id">
+    <a href="/poemdiff?nro1={{ data['poem'].nro }}&nro2={{ nro }}">{{ data['related'][nro].smd.title }}</a>
+      &ensp;
+    </td>
+    <td><small>{{ (s*100) | int }}&nbsp;%</small></td>
+    <td>
+     <div class="progress" style="width: 100px; display: inline-block">
+       <div class="progress-bar" role="progressbar" aria-valuenow="{{ (s*100) | int }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ (s*100) | int }}%;">
+       </div>
+     </div>
+   </td>
+  </tr>
+  {% endfor %}
+</table>
+</div> <!-- table-responsive -->
+</div> <!-- panel-body -->
+</div> <!-- panel -->
+{% endif %}
+
+</div> <!-- column -->
+</div> <!-- row -->
+</div> <!-- container-fluid -->
+
+{% if data['sim'] %}
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Similar poems</h4>
+      </div>
+      <div class="modal-body">
+         <div class="table-responsive" style="max-height: 700px; overflow-y: scroll;" id="similar-poems">
+         <table id="sim_poems" class="table compact table-condensed table-striped" style="width: 100%;">
+         <thead>
+           <th><input type="checkbox" id="sim_poems_select_all"></th>
+           <th>poem</th>
+           <th>sim.</th>
+           <th></th>
+           <th>year</th>
+           <th>place</th>
+           <th>collector</th>
+         </thead>
+         <tbody>
+         {% for nro, s in data['sim'] | sort(attribute=1, reverse=True) %}
+           <tr>
+             <td><input type="checkbox" value="{{ nro }}"></td>
+             <td>
+             <a href="/poemdiff?nro1={{ data['poem'].nro }}&nro2={{ nro }}">{{ data['related'][nro].smd.title }}</a>
+               &ensp;
+             </td>
+             <td>{{ (s*100) | int }}%</td>
+             <td><div class="progress" style="width: 100px; display: inline-block"> <div class="progress-bar" role="progressbar" aria-valuenow="{{ (s*100) | int }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ (s*100) | int }}%;"></div></div></td>
+             <td>{{ data['related'][nro].smd.year }}</td>
+             <td>{{ data['related'][nro].smd.place }}</td>
+             <td>{{ data['related'][nro].smd.collector }}</td>
+           </tr>
+           {% endfor %}
+         </tbody>
+         </table>
+         </div> <!-- table-responsive -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-default" id="clear-selection">Clear selection</button>
+        <button type="button" class="btn btn-primary" id="compare-selected">Compare selected</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script lang="javascript">
+  const ds = new Selection({
+    selectables: '.verse_id'
+  })
+  function getTableCell(node) {
+    var n = node;
+    while (n.tagName != "TD" && n.parentNode) {
+      n = n.parentNode;
+    }
+    if (n.tagName == "TD") {
+      return n;
+    } else {
+      return null;
+    }
+  }
+  ds.on('beforestart', (evt) => {
+    console.log(evt);
+    var c = getTableCell(evt.oe.target);
+    return (c !== null && c.classList.contains("verse_id"));
+  });
+  ds.on('move', ({ changed: { removed, added } }) => {
+      for (const el of added)
+        getTableCell(el).classList.add('selected')
+      for (const el of removed)
+        getTableCell(el).classList.remove('selected')
+    })
+  ds.on('stop', ({inst,selected}) => {
+    inst.clearSelection()
+    for (const el of selected) {
+      getTableCell(el).classList.remove('selected')
+    }
+    window.open('/passage?nro={{ data['poem'].nro }}&start=' + selected[0].id + '&end=' + selected[selected.length - 1].id{% if args['clustering'] > 0 %}+ '&clustering={{ args['clustering'] }}'{% endif %},'_self')
+  })
+
+$('#clear-selection').on('click', (e) => {
+  const table = $("#sim_poems").DataTable();
+  table.rows().every( function(rowIdx, tableLoop, rowLoop) {
+      $("input[type=checkbox]", this.node()).prop('checked', false);
+    } );
+});
+$('#compare-selected').on('click', (e) => {
+  const table = $("#sim_poems").DataTable();
+  var array = [];
+  table.rows().every( function(rowIdx, tableLoop, rowLoop) {
+      $("input[type=checkbox]:checked", this.node()).each( function() {
+        array.push($(this).val());
+      });
+    } );
+  if (array.length > 0) {
+    window.open("/multidiff?nro={{ data['poem'].nro }}," + array.join(","));
+  }
+});
+
+$(document).ready(function() {
+  $('#sim_poems').DataTable( {
+    columnDefs: [
+      { orderable: false, targets: 0 },
+      { orderable: false, targets: 3 },
+      { type: "num-fmt", "targets": 2 }
+    ],
+    order: [[2, 'desc']]
+    } );
+} );
+
+$('#sim_poems_select_all').change(function() {
+  $('input[type=checkbox]', '#similar-poems').not(this).prop('checked', this.checked);
+  $('#sim_poems_select_all').prop('checked', false);
+});
+</script>
+
+</body>
+</html>

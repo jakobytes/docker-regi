@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>Runoregi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" href="./static/css/style.css">
+</head>
+
+<body>
+
+{% if data['maintenance'] %}
+<div class="alert alert-warning" role="alert">
+<b>Warning!</b> A database update is ongoing. Some pages might not
+function properly.
+</div>
+{% endif %}
+
+<!--
+<div style="position: absolute; top: 0; right: 0;">
+<a href="https://github.com/hsci-r/runoregi"><img decoding="async" width="120" height="120" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_green_007200.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" loading="lazy" data-recalc-dims="1"></a>
+</div>
+-->
+
+<div class="page-header">
+<h1 style="margin-left: 20px;">Runoregi</h1>
+</div>
+
+<div class="container-fluid">
+<div class="row">
+<div class="col-md-4">
+
+{% for p in data['pages'] | selectattr("position", "eq", "left") %}
+<div class="panel panel-primary">
+{% if p['title'] %}
+<div class="panel-heading">
+{% if p["helptext"] %}
+<div class="pull-right hover-text">
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<div class="tooltip-text tooltip-text-right">
+{{ p["helptext"] | safe }}
+</div>
+</div>
+{% endif %}
+<h2 class="panel-title">{{ p["title"] }}</h2>
+</div>
+{% endif %}
+<div class="panel-body">
+{{ p["content"] | safe }}
+</div>
+</div>
+{% endfor %}
+
+</div>
+
+<div class="col-md-8">
+{% for p in data["pages"] | selectattr("position", "eq", "main") %}
+<div class="panel panel-primary">
+{% if p["title"] %}
+<div class="panel-heading">
+{% if p["helptext"] %}
+<div class="pull-right hover-text">
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<div class="tooltip-text tooltip-text-right">
+{{ p["helptext"] | safe }}
+</div>
+</div>
+{% endif %}
+<h2 class="panel-title">{{ p["title"] }}</h2>
+</div>
+{% endif %}
+<div class="panel-body">
+{{ p["content"] | safe }}
+</div>
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+
+</body>
+</html>

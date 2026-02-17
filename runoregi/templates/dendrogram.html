@@ -1,0 +1,352 @@
+<html>
+<head>
+<title>{% if args['source'] == "type" %}{{ data['target_type'][args['type_id']].name }}{% else %}Dendrogram{% endif %} — Runoregi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" href="./static/css/style.css">
+<script lang="javascript" src="./static/js/jquery.min.js"></script>
+<script lang="javascript" src="./static/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+{% if data['maintenance'] %}
+<div class="alert alert-warning" role="alert">
+<b>Warning!</b> A database update is ongoing. Some pages might not
+function properly.
+</div>
+{% endif %}
+
+<div class="panel panel-primary">
+<div class="panel-body">
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/" title="to index">
+   <span class="glyphicon glyphicon-home"></span>
+  </a></li>
+  {% if args['source'] == "cluster" %}
+  <li role="presentation"><a role="button" href="/poem?nro={{ args['nro'][0] }}">
+   <span class="glyphicon glyphicon-chevron-left"></span>
+   Back to poem
+  </a></li>
+  {% elif args['source'] == "type" %}
+    {% for type_id in data['target_type'][args['type_id']].ancestors | reverse %}
+  <li role="presentation"><a role="button" href="/poemlist?source=type&id={{ type_id }}">
+   <span class="glyphicon glyphicon-chevron-right"></span>
+   {{ data['target_type'][type_id].name }}
+  </a></li>
+    {% endfor %}
+  {% elif args['source'] in ("place", "collector") %}
+  <li role="presentation"><a role="button" href="/poemlist?source={{ args['source'] }}&id={{ args['id'] }}">
+   <span class="glyphicon glyphicon-chevron-left"></span>
+   Back to list
+  </a></li>
+  {% endif %}
+</ul>
+
+{% if data['title'] %}
+<h1 style="margin-left: 20px;">{{ data['title'] }}</h1>
+{% endif %}
+{% if args['source'] == "type" %}
+<p style="margin-left: 20px;">{{ data['target_type'][args['type_id']].description | safe }}</p>
+<ul class="nav nav-pills">
+{% endif %}
+
+<ul class="nav nav-pills">
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Linking method: {{ args['method'] }} <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['method'] %}
+    <li role="presentation"><a href="{{ links['method'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Neighborhood: {% if args['nb'] == 1 %}none{% else %}{{ args['nb'] }}{% endif %}
+      <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['nb'] %}
+    <li role="presentation"><a href="{{ links['nb'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+  {% if args['source'] != "nros" and args['nb'] == 1 %}
+    {% if links['map'] %}
+    <li role="presentation"><a role="button" target="_blank" href="{{ links['map'] }}">
+     <span class="glyphicon glyphicon-picture"></span> Map
+    </a></li>
+    {% endif %}
+    {% if links['types'] %}
+    <li role="presentation"><a role="button" target="_blank" href="{{ links['types'] }}">
+     <span class="glyphicon glyphicon-th"></span>
+     {% if args['source'] == "type" %}Co-occurring types{% else %}Type distribution{% endif %}
+    </a></li>
+    {% endif %}
+  {% endif %}
+</ul>
+
+<h2>Dendrogram ({{ data['poems'] | length }})</h2>
+
+<svg id="dendrogram" version="1.1"
+     width="100%" height="{{ 75 * data['n'] + 35 + 17 * (data['typetree'] | length) }}"
+     xmlns="http://www.w3.org/2000/svg">
+</svg>
+
+</div>
+</div>
+
+<script>
+var dd = [
+{% for x1, y1, x2, y2, x, y, nros in data['dd'] %}
+{ x1: {{ x1 }}, y1: {{ y1 }}, x2: {{ x2 }}, y2: {{ y2 }},
+  x: {{ x }}, y: {{ y }}, nros: {{ nros | tojson }} },
+{% endfor %}
+];
+var leaves = [
+{% for i in data['ll'] %}
+{ nro: {{ data['nros'][i] | tojson }},
+  title: {{ data['poems'][data['nros'][i]].smd.title | tojson }},
+  place: {% if data['poems'][data['nros'][i]].smd.place is not none %}{{ data['poems'][data['nros'][i]].smd.place | tojson }}{% else %}""{% endif %},
+  collector: {% if data['poems'][data['nros'][i]].smd.collector is not none %}{{ data['poems'][data['nros'][i]].smd.collector | tojson }}{% else %}""{% endif %},
+  year: {% if data['poems'][data['nros'][i]].smd.year is not none %}{{ data['poems'][data['nros'][i]].smd.year | tojson }}{% else %}""{% endif %},
+  types: [ {% for type_id in data['poems'][data['nros'][i]].type_ids %}{% if loop.index0 > 0 %},{% endif %}"{{ data['types'][type_id].name }}"{% endfor %} ],
+  type_styles: [ {% for type_id in data['poems'][data['nros'][i]].type_ids %}{% if loop.index0 > 0 %},{% endif %}"{{ data['type_styles'][type_id] }}"{% endfor %} ],
+  inner: {{ (data['nros'][i] in data['inner']) | tojson }}
+},  
+{% endfor %}
+];
+var typetree = [
+  {% for t in data['typetree'] %}
+  { prefix: {{ t.prefix | join('\u2003') | tojson }},
+    id: {{ t.type_id | tojson }},
+    name: {{ data['types'][t.type_id].name | tojson }},
+    style: {% if t.type_id in data['type_styles'] %}{{ data['type_styles'][t.type_id] }}{% else %} -1 {% endif %} },
+  {% endfor %}
+];
+var focusedTypes = new Set();
+
+function get_leaf_x() {
+  return Math.max(Math.min(1000, window.innerWidth-300), 100);
+}
+
+function draw_type_tree(y) {
+  var d = document.getElementById("dendrogram");
+  for (i = 0; i < typetree.length; i++) {
+    let t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", 50);
+    t.setAttribute("y", y + i*17 + 15);
+    t.setAttribute("font-size", 16);
+    t.setAttribute("text-anchor", "left");
+    t.appendChild(document.createTextNode(typetree[i]["prefix"] + " " + typetree[i]["name"]));
+    d.appendChild(t);
+    if (typetree[i]["style"] > -1) {
+      var t_sq = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      t_sq.setAttribute("x", 20);
+      t_sq.setAttribute("y", y + i*17);
+      t_sq.setAttribute("width", 15);
+      t_sq.setAttribute("height", 15);
+      t_sq.setAttribute("title", typetree[i]["name"]);
+      t_sq.classList.add("dendrogram-typetree-square");
+      t_sq.classList.add("c"+typetree[i]["style"]);
+      var t_sq_tit = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      t_sq_tit.appendChild(document.createTextNode(typetree[i]["name"]));
+      var t_sq_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t_sq_text.setAttribute("x", parseInt(t_sq.getAttribute("x"))+2);
+      t_sq_text.setAttribute("y", parseInt(t_sq.getAttribute("y"))+12);
+      t_sq_text.setAttribute("font-size", 14);
+      t_sq_text.classList.add("dendrogram-typetree-square-text");
+      t_sq_text.setAttribute("style", "fill: white; font-family: courier; font-weight: bold; cursor: default;");
+      t_sq_text.appendChild(document.createTextNode(typetree[i]["name"].substr(0, 1)));
+      t_sq_text.appendChild(t_sq_tit);
+      t.addEventListener("click", function(e) {
+          focus_type(e.target.nextElementSibling.nextElementSibling
+                     .firstElementChild.textContent);
+      });
+      t_sq.addEventListener("click", function(e) {
+          focus_type(e.target.nextElementSibling.firstElementChild.textContent);
+      });
+      t_sq_text.addEventListener("click", function(e) {
+          focus_type(e.target.firstElementChild.textContent);
+      });
+      d.appendChild(t_sq);
+      d.appendChild(t_sq_text);
+    }
+  }
+}
+
+function focus_type(name) {
+  var d = document.getElementById("dendrogram");
+  if (focusedTypes.has(name)) {
+    focusedTypes.delete(name);
+  } else {
+    focusedTypes.add(name);
+  }
+
+  d.querySelectorAll(".dendrogram-type-square-text, .dendrogram-typetree-square-text")
+    .forEach(c => {
+      if ((focusedTypes.size == 0) || (focusedTypes.has(c.firstElementChild.textContent))) {
+        c.previousElementSibling.classList.remove("g1");
+      } else {
+        c.previousElementSibling.classList.add("g1");
+      }
+  });
+}
+
+// TODO refactor!
+// - class Dendrogram(svgid, dd, leaves)
+// - drawing methods: line(), box(), text() - optionally with href
+// - draw(), redraw()
+
+function draw_dendrogram() {
+  var d = document.getElementById("dendrogram");
+  var leaf_x = get_leaf_x();
+  d.setAttribute("width", Math.max(window.innerWidth, leaf_x+1000));
+  for (i = 0; i < leaves.length; i++) {
+    var title_link = document.createElementNS("http://www.w3.org/2000/svg", "a");
+    title_link.setAttributeNS(
+      "http://www.w3.org/1999/xlink", "href",
+      "/poem?nro=" + leaves[i].nro);
+    var title = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    title.setAttribute("x", leaf_x);
+    title.setAttribute("y", i*75 + 15);
+    title.setAttribute("font-size", 16);
+    title.setAttribute("text-anchor", "left");
+    title.setAttribute("class", "dendrogram-leaf");
+    if (!leaves[i].inner) {
+      title.setAttribute("fill", "gray");
+    }
+    title.appendChild(document.createTextNode(leaves[i].title));
+    title_link.appendChild(title);
+    d.appendChild(title_link);
+    var place = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    place.setAttribute("x", leaf_x);
+    place.setAttribute("y", i*75 + 30);
+    place.setAttribute("font-size", 14);
+    place.setAttribute("text-anchor", "left");
+    place.setAttribute("class", "dendrogram-leaf");
+    place.appendChild(document.createTextNode(leaves[i].place));
+    d.appendChild(place);
+    var col_year = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    col_year.setAttribute("x", leaf_x);
+    col_year.setAttribute("y", i*75 + 45);
+    col_year.setAttribute("font-size", 14);
+    col_year.setAttribute("text-anchor", "left");
+    col_year.setAttribute("class", "dendrogram-leaf");
+    col_year.appendChild(document.createTextNode(leaves[i].year + " " + leaves[i].collector));
+    d.appendChild(col_year);
+    for (j = 0; j < leaves[i].types.length; j++) {
+      var t_sq = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      t_sq.setAttribute("x", leaf_x + j*20);
+      t_sq.setAttribute("y", i*75+50);
+      t_sq.setAttribute("data-pos", j);
+      t_sq.setAttribute("width", 15);
+      t_sq.setAttribute("height", 15);
+      t_sq.setAttribute("title", leaves[i].types[j]);
+      t_sq.classList.add("dendrogram-type-square");
+      t_sq.classList.add("c"+leaves[i].type_styles[j]);
+      var t_sq_tit = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      t_sq_tit.appendChild(document.createTextNode(leaves[i].types[j]));
+      var t_sq_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t_sq_text.setAttribute("x", parseInt(t_sq.getAttribute("x"))+2);
+      t_sq_text.setAttribute("y", parseInt(t_sq.getAttribute("y"))+12);
+      t_sq_text.setAttribute("data-pos", j);
+      t_sq_text.setAttribute("font-size", 14);
+      t_sq_text.classList.add("dendrogram-type-square-text");
+      t_sq_text.setAttribute("style", "fill: white; font-family: courier; font-weight: bold; cursor: default;");
+      t_sq_text.appendChild(document.createTextNode(leaves[i].types[j].substr(0, 1)));
+      t_sq_text.appendChild(t_sq_tit);
+      t_sq_text.addEventListener("click", function(e) {
+          focus_type(e.target.firstElementChild.textContent);
+      });
+      d.appendChild(t_sq);
+      d.appendChild(t_sq_text);
+    }
+  }
+  for (i = 0; i < dd.length; i++) {
+    var line_1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line_1.setAttribute("x1", Math.round(dd[i].x1 / 420 * leaf_x));
+    line_1.setAttribute("y1", dd[i].y1);
+    line_1.setAttribute("x2", Math.round(dd[i].x / 420 * leaf_x));
+    line_1.setAttribute("y2", dd[i].y1);
+    line_1.setAttribute("class", "dendrogram-line-1");
+    line_1.setAttribute("style", "stroke:black;stroke-width:1");
+    d.appendChild(line_1);
+    var line_2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line_2.setAttribute("x1", Math.round(dd[i].x2 / 420 * leaf_x));
+    line_2.setAttribute("y1", dd[i].y2);
+    line_2.setAttribute("x2", Math.round(dd[i].x / 420 * leaf_x));
+    line_2.setAttribute("y2", dd[i].y2);
+    line_2.setAttribute("class", "dendrogram-line-2");
+    line_2.setAttribute("style", "stroke:black;stroke-width:1");
+    d.appendChild(line_2);
+    var line_3 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line_3.setAttribute("x1", Math.round(dd[i].x / 420 * leaf_x));
+    line_3.setAttribute("y1", dd[i].y1);
+    line_3.setAttribute("x2", Math.round(dd[i].x / 420 * leaf_x));
+    line_3.setAttribute("y2", dd[i].y2);
+    line_3.setAttribute("class", "dendrogram-line-3");
+    line_3.setAttribute("style", "stroke:black;stroke-width:1");
+    d.appendChild(line_3);
+  }
+  for (i = 0; i < dd.length; i++) {
+    if (dd[i].x > 0) {
+      var box_link = document.createElementNS("http://www.w3.org/2000/svg", "a");
+      box_link.setAttributeNS(
+        "http://www.w3.org/1999/xlink", "href",
+        "/multidiff?nro=" + dd[i].nros.join(","));
+      var box = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      box.setAttribute("x", Math.round(dd[i].x / 420 * leaf_x)-10);
+      box.setAttribute("y", dd[i].y-10);
+      box.setAttribute("width", 20);
+      box.setAttribute("height", 20);
+      box.setAttribute("fill", "#337ab7");
+      box.setAttribute("class", "dendrogram-box");
+      box_link.appendChild(box);
+      d.appendChild(box_link);
+    }
+  }
+  draw_type_tree(75 * leaves.length);
+}
+
+function resize_dendrogram() {
+  var d = document.getElementById("dendrogram");
+  var leaf_x = get_leaf_x();
+  d.setAttribute("width", Math.max(window.innerWidth, leaf_x+1000));
+  d.querySelectorAll(".dendrogram-leaf")
+    .forEach(c => c.setAttribute("x", leaf_x));
+  var lines_1 = d.querySelectorAll(".dendrogram-line-1");
+  var lines_2 = d.querySelectorAll(".dendrogram-line-2");
+  var lines_3 = d.querySelectorAll(".dendrogram-line-3");
+  var boxes = d.querySelectorAll(".dendrogram-box");
+  console.log(boxes);
+  var j = 0;
+  for (i = 0; i < dd.length; i++) {
+    lines_1[i].setAttribute("x1", Math.round(dd[i].x1 / 420 * leaf_x));
+    lines_1[i].setAttribute("x2", Math.round(dd[i].x / 420 * leaf_x));
+    lines_2[i].setAttribute("x1", Math.round(dd[i].x2 / 420 * leaf_x));
+    lines_2[i].setAttribute("x2", Math.round(dd[i].x / 420 * leaf_x));
+    lines_3[i].setAttribute("x1", Math.round(dd[i].x / 420 * leaf_x));
+    lines_3[i].setAttribute("x2", Math.round(dd[i].x / 420 * leaf_x));
+    if (dd[i].x > 0) {
+      boxes[j].setAttribute("x", Math.round(dd[i].x / 420 * leaf_x)-10);
+      j++;
+    }
+  }
+  d.querySelectorAll(".dendrogram-type-square")
+    .forEach(c => c.setAttribute("x", leaf_x + c.getAttribute("data-pos")*20));
+  d.querySelectorAll(".dendrogram-type-square-text")
+    .forEach(c => c.setAttribute("x", leaf_x + c.getAttribute("data-pos")*20 + 2));
+}
+
+window.addEventListener('load', draw_dendrogram);
+window.addEventListener('resize', resize_dendrogram);
+screen.orientation.addEventListener('change', resize_dendrogram);
+</script>
+
+</body>
+</html>

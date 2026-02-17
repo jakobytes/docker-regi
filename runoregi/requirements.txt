@@ -1,0 +1,7 @@
+flask
+gunicorn
+lxml
+numpy
+scipy
+pymysql
+git+https://github.com/hsci-r/shortsim

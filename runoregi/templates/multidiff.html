@@ -1,0 +1,424 @@
+<html>
+<head>
+<title>Multi-poem comparison — Runoregi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" href="./static/css/style.css">
+<script lang="javascript" src="./static/js/jquery.min.js"></script>
+<script lang="javascript" src="./static/js/bootstrap.min.js"></script>
+</head>
+
+<style>
+.fold_label {
+  text-align: center;
+  font-size: 10pt;
+  color: #888888;
+  cursor: pointer;
+}
+</style>
+
+<body>
+
+{% if data['maintenance'] %}
+<div class="alert alert-warning" role="alert">
+<b>Warning!</b> A database update is ongoing. Some pages might not
+function properly.
+</div>
+{% endif %}
+
+{% if data['poems'] | length < 8 %}
+<div class="container-fluid">
+<div class="row">
+<div class="col-lg-{{ 4-(data['poems'] | length)//2 }}"></div>
+<div class="col-lg-{{ 4+(data['poems'] | length)//2*2 }}">
+{% endif %}
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/" title="to index">
+   <span class="glyphicon glyphicon-home"></span>
+  </a></li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-list-alt"></span>
+      Export as <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+    <li role="presentation"><a href="{{ links['csv'] }}">CSV</a></li>
+    <li role="presentation"><a href="{{ links['tsv'] }}">TSV</a></li>
+    </ul>
+  </li>
+  <li role="presentation"><a role="button" href="/poemnet?nro={{ args['nro'] | join(',') }}">
+   <span class="glyphicon glyphicon-cloud"></span> Network view
+  </a></li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Linking method: {{ args['method'] }} <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['method'] %}
+    <li role="presentation"><a href="{{ links['method'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Threshold: {{ args['t'] }}
+      <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['t'] %}
+    <li role="presentation"><a href="{{ links['t'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+</ul>
+
+<div class="panel panel-primary">
+<div class="panel-body" style="overflow-x: scroll">
+
+<table>
+  <tr>
+    {% for p in data['poems'] %}
+    <td width="350" align="center">
+      <ul class="nav nav-pills">
+        {% if loop.index0 > 0 %}
+        <li role="presentation">
+          <a role="button"
+             href="/poemdiff?nro1={{ data['poems'][loop.index0-1].nro}}&nro2={{ p.nro }}"
+             title="compare to the left neighbor">
+           <span class="glyphicon glyphicon-chevron-left"></span>
+          </a>
+        </li>
+        {% endif %}
+        <li class="btn-focus-column" role="presentation" title="focus">
+           <a role="button" onclick="fold_focus_column({{ loop.index0 }});">
+             <span class="glyphicon glyphicon-screenshot"></span>
+           </a>
+        </li>
+        {% if loop.index0+1 < data['poems'] | length %}
+        <li role="presentation">
+          <a role="button"
+             href="/poemdiff?nro1={{ p.nro }}&nro2={{ data['poems'][loop.index0+1].nro }}"
+             title="compare to the right neighbor">
+           <span class="glyphicon glyphicon-chevron-right"></span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </td>
+    {% endfor %}
+    </tr>
+    <tr>
+    {% for p in data['poems'] %}
+    <td>
+      <h2><a href="/poem?nro={{ p.nro }}">{{ p.smd.title }}</a></h2>
+      <small> {{ p.nro }}<br /> </small>
+      <small> {{ p.smd.place }}<br /> </small>
+      <small> {{ p.smd.year }}&nbsp;{{ p.smd.collector }}</small>
+    </td>
+    {% endfor %}
+  </tr>
+  {% for key in data['meta_keys'] %}
+  <tr>
+    {% for p in data['poems'] %}
+    <td width="350">
+      {% if data['meta'][p.nro][key] is defined %}<small><b>{{ key }}:</b> {{ data['meta'][p.nro][key] }}</small>{% endif %}
+    </td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+  <tr>
+    {% for p in data['poems'] %}
+    <td valign="top">
+      <p style="line-height: 1"><small>
+        {% for line in p.type_tree %}
+        {% if line.is_minor %}<font color="gray">{% endif %}{{ line.prefix | join('\u2003') }} {{ data['types'][line.type_id].name }}{% if line.is_minor %}</font>{% endif %}<br/>
+        {% endfor %}
+      </small></p>
+    </td>
+    {% endfor %}
+  </tr>
+  <tr>
+    <td colspan="3">&nbsp;</td>
+  </tr>
+    {% for verses in data['alignment'] %}
+
+  <tr class="line">
+    {% for v in verses %}
+    <td {% if v is not defined or not v.text_norm %}ondblclick="fold(this);"{% endif %}>{% if v is defined and v.text_norm %}<span onclick="toggle_highlight(this);" data-v_id="{{ v.v_id }}">{{ v.text_norm }}</span>{% endif %}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+<hr>
+<small>
+<table class="table-condensed">
+<tr>
+<td><b>symmetric similarity</b></td>
+{% for j in range(data['m'].shape[1]) %}
+<td>{{ args['nro'][j] }}</td>
+{% endfor %}
+</tr>
+{% for i in range(data['m'].shape[0]) %}
+<tr>
+<td>{{ args['nro'][i] }}</td>
+{% for j in range(data['m'].shape[1]) %}
+<td>{% if data['m'][i,j] > 0 %}{{ (data['m'][i,j]*100) | int }}%{% endif %}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+<table class="table-condensed">
+<tr>
+<td><b>one-sided similarity</b></td>
+{% for j in range(data['m'].shape[1]) %}
+<td>{{ args['nro'][j] }}</td>
+{% endfor %}
+</tr><br><br>
+{% for i in range(data['m'].shape[0]) %}
+<tr>
+<td>{{ args['nro'][i] }}</td>
+{% for j in range(data['m'].shape[1]) %}
+<td>{% if data['m_onesided'][i,j] > 0 %}{{ (data['m_onesided'][i,j]*100) | int }}%{% endif %}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</small>
+
+</div>
+</div>
+
+{% if data['poems'] | length < 8 %}
+</div>
+<div class="col-lg-{{ 4-(data['poems'] | length)//2 }}"></div>
+</div>
+</div>
+{% endif %}
+
+<script>
+
+var v_sims = {{ data['v_sims'] | tojson }};
+
+var focus_col = -1;
+
+function toggle_highlight(node) {
+  if (node.hasAttribute("hl")) {
+    remove_highlight(node);
+  } else {
+    add_highlight(node);
+  }
+}
+
+function add_highlight(node) {
+  document.querySelectorAll("[hl]").forEach(n => { remove_highlight(n); });
+  node.setAttribute("hl", 1);
+  v_id = node.getAttribute("data-v_id");
+  document.querySelectorAll("[data-v_id]").forEach(n => {
+    v_id_2 = n.getAttribute("data-v_id");
+    if (v_id_2 in v_sims[v_id]) {
+      s = 0.2 + 0.8*(v_sims[v_id][v_id_2]-{{ args['t'] }}) / (1-{{ args['t'] }});
+      n.style.backgroundColor = "rgba(255, 192, 21, " + s  + ")";
+      n.style.padding = "2px";
+      n.style.borderRadius = "3px";
+      n.setAttribute("title", ""+v_sims[v_id][v_id_2].toFixed(2));
+    }
+  });
+  console.log(node);
+}
+
+function remove_highlight(node) {
+  node.removeAttribute("hl");
+  node.removeAttribute("style");
+  node.removeAttribute("title");
+  document.querySelectorAll("[data-v_id]").forEach(n => {
+    v_id_2 = n.getAttribute("data-v_id");
+    if (v_id_2 in v_sims[v_id]) {
+      n.removeAttribute("style");
+      n.removeAttribute("title");
+    }
+  });
+  console.log(node);
+}
+
+function get_column(node) {
+  let result = 0;
+  while (node.previousElementSibling != null) {
+    result++;
+    node = node.previousElementSibling;
+  }
+  return result;
+}
+
+function make_fold_row(n_folded) {
+  let fold_row = document.createElement("tr");
+  fold_row.className = "fold";
+  for (k = 0; k < n_folded.length; k++) {
+    let cell = document.createElement("td");
+    if (n_folded[k] > 0) {
+      let text = "--- (" + n_folded[k] + ") ---";
+      cell.appendChild(document.createTextNode(text));
+      cell.setAttribute("data-column", k);
+      cell.classList.add("fold_label");
+      cell.addEventListener("click", function(e) { unfold(e.target); });
+     }
+     fold_row.appendChild(cell);
+   }
+   return fold_row;
+}
+
+function fold(node) {
+  set_focus_column(-1);
+  let j = get_column(node);
+  if (node.textContent != "") { return; }
+
+  // determine the row from which to start folding
+  let n = node.parentNode;
+  while ((n.previousElementSibling != null) &&
+         (n.previousElementSibling.className == "line" ||
+          n.previousElementSibling.className == "fold") &&
+         (n.hidden || n.children[j].textContent == "")) {
+    n = n.previousElementSibling;
+  }
+  if (n.children[j].textContent != "") {
+    n = n.nextElementSibling;
+  }
+
+  // fold from that row
+  let n_folded = [];
+  for (let k = 0; k < n.children.length; k++) {
+    n_folded[k] = 0;
+  }
+  while (n.nextElementSibling != null) {
+    if (n.classList.contains("line")) {
+      if (n.children[j].textContent == "") {
+        n.hidden = true;
+      }
+      if (n.hidden) {
+        for (k = 0; k < n.children.length; k++) {
+          if (n.children[k].textContent != "") {
+            n_folded[k]++;
+          }
+        }
+        n = n.nextElementSibling;
+      } else {
+        break;
+      }
+    } else if (n.classList.contains("fold")) {
+      n = n.nextElementSibling;
+      n.parentNode.removeChild(n.previousElementSibling);
+    }
+  }
+  // process the last line if it needs to be folded
+  if (n.nextElementSibling == null) {
+    if ((n.className == "line") && (n.children[j].textContent = "") ) {
+      n.hidden = true;
+      for (k = 0; k < n.children.length; k++) {
+        if (n.children[k].textContent != "") {
+          n_folded[k]++;
+        }
+      }
+    } else if (n.className == "fold") {
+      n = n.previousSibling;
+      n.parentNode.removeChild(n.nextSibling);
+    }
+  } else {
+    n = n.previousSibling;
+  }
+
+  let fold_row = make_fold_row(n_folded);
+  if (n.nextSibling != null) {
+    n.parentNode.insertBefore(fold_row, n.nextSibling);
+  } else {
+    n.parentNode.appendChild(fold_row);
+  }
+}
+
+function unfold(node) {
+  set_focus_column(-1);
+  let j = get_column(node);
+  let start = node.parentNode.previousElementSibling;
+  while ((start.previousElementSibling != null) &&
+         (start.previousElementSibling.hidden)) {
+    start = start.previousElementSibling;
+  }
+  end = node.parentNode.nextElementSibling;
+  node.parentNode.remove();
+
+  let n_folded = [];
+  let lines_folded = 0;
+  for (let k = 0; k < start.children.length; k++) {
+    n_folded[k] = 0;
+  }
+
+  let n = start;
+  while (n != end) {
+    if (n.children[j].textContent != "") {
+      n.hidden = false;
+      if (lines_folded > 0) {
+        let fold_row = make_fold_row(n_folded);
+        n.parentNode.insertBefore(fold_row, n);
+        n = fold_row;
+
+        lines_folded = 0;
+        for (let k = 0; k < n_folded.length; k++) {
+          n_folded[k] = 0;
+        }
+      }
+    } else {
+      lines_folded++;
+      for (let k = 0; k < n_folded.length; k++) {
+        if (n.children[k].textContent != "") {
+          n_folded[k]++;
+        }
+      }
+    }
+    n = n.nextElementSibling;
+  }
+  if (lines_folded > 0) {
+    let fold_row = make_fold_row(n_folded);
+    if (end != null) {
+      end.parentNode.insertBefore(fold_row, end);
+    } else {
+      end.parentNode.appendChild(fold_row);
+    }
+  }
+}
+
+function unfold_all() {
+  set_focus_column(-1);
+  document.querySelectorAll(".line").forEach(n => { n.hidden = false; });
+  document.querySelectorAll(".fold").forEach(n => { n.remove(); });
+}
+
+function set_focus_column(j) {
+  if (focus_col > -1) {
+    document.getElementsByClassName("btn-focus-column")[focus_col]
+      .classList.remove("active");
+  }
+  if (j > -1) {
+    document.getElementsByClassName("btn-focus-column")[j]
+      .classList.add("active");
+  }
+  focus_col = j;
+}
+
+function fold_focus_column(j) {
+  let prev_focus_col = focus_col;
+  unfold_all();
+  if (prev_focus_col != j) {
+    document.querySelectorAll(".line").forEach(n => {
+      if ((!n.hidden) && (n.children[j].textContent == "")) {
+        fold(n.children[j]);
+      }
+    });
+    set_focus_column(j);
+  }
+}
+
+</script>
+
+</body>
+</html>

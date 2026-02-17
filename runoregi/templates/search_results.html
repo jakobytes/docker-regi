@@ -1,0 +1,132 @@
+<html>
+<head>
+<title>Search: {{ args['q'] }} — Runoregi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" href="./static/css/style.css">
+<script lang="javascript" src="./static/js/jquery.min.js"></script>
+<script lang="javascript" src="./static/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+{% if data['maintenance'] %}
+<div class="alert alert-warning" role="alert">
+<b>Warning!</b> A database update is ongoing. Some pages might not
+function properly.
+</div>
+{% endif %}
+
+<table width="100%">
+<tr>
+<td width="50">
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/" title="to index">
+   <span class="glyphicon glyphicon-home"></span>
+  </a></li>
+</ul>
+</td>
+<td align="center">
+<br/>
+<form method="GET" action="/search">
+<div class="input-group" style="max-width: 800px">
+  <input type="text" class="form-control" name="q" value="{{ args['q'] }}">
+  <span class="input-group-btn">
+    <button class="btn btn-default" type="button submit">Search</button>
+  </span>
+</div>
+</form>
+</td>
+<td width="50"></td>
+</tr>
+</table>
+<hr/>
+<h1>Search results for: {{ args['q'] }}</h1>
+
+<div class="container-fluid"> 
+<div class="row">
+<div class="col-md-1"></div>
+<div class="col-md-2">
+{% if data['r_smd'] %}
+{% for source, col_id, name in data['r_smd'] %}
+<h4>
+{% if source == "collector" %}
+<span class="glyphicon glyphicon-user" aria-hidden="true" title="collector"></span>
+{% elif source == "place" %}
+<span class="glyphicon glyphicon-map-marker" aria-hidden="true" title="place"></span>
+{% endif %}
+<a href="/poemlist?source={{ source }}&id={{ col_id }}">{{ name | safe }}</a>
+</h4>
+{% endfor %}
+{% endif %}
+</div>
+<div class="col-md-6">
+
+<ul class="nav nav-tabs">
+  <li role="presentation" class="nav-item{% if data['r_types'] %} active{% else %} disabled{% endif %}">
+    <a class="nav-link"{% if data['r_types'] %} data-toggle="tab" href="#types"{% endif %}>Types ({{ data['r_types'] | length }})</a>
+  </li>
+  <li class="nav-item{% if data['r_meta'] and not data['r_types'] %} active{% elif not data['r_meta'] %} disabled{% endif %}">
+    <a class="nav-link"{% if data['r_meta'] %} data-toggle="tab" href="#metadata"{% endif %}>Metadata ({{ data['r_meta'] | length }})</a>
+  </li>
+  <li class="nav-item{% if data['r_verses'] and not data['r_meta'] and not data['r_types'] %} active{% elif not data['r_verses'] %} disabled{% endif %}">
+    <a class="nav-link"{% if data['r_verses'] %} data-toggle="tab" href="#verses"{% endif %}>Verses ({{ data['r_verses'] | length }})</a>
+  </li>
+  <li class="nav-item{% if data['r_inline'] and not data['r_meta'] and not data['r_types'] and not data['r_verses'] %} active{% elif not data['r_inline'] %} disabled{% endif %}">
+    <a class="nav-link"{% if data['r_inline'] %} data-toggle="tab" href="#inline"{% endif %}>Inline text ({{ data['r_inline'] | length }})</a>
+  </li>
+</ul>
+
+<div class="tab-content">
+<div class="tab-pane container {% if data['r_types'] %}active{% else %}fade{% endif %}" id="types">
+{% if data['r_types'] %}
+<hr/>
+{% for type_id, name, desc, upper in data['r_types'] %}
+<h4>{{ upper | join(" > ") }} &gt;
+<a href="/poemlist?source=type&id={{ type_id }}">{{ name | safe }}</a></h4>
+{{ desc | safe }}
+<hr/>
+{% endfor %}
+{% endif %}
+</div>
+
+<div class="tab-pane container {% if data['r_meta'] and not data['r_types'] %}active{% else %}fade{% endif %}" id="metadata">
+{% if data['r_meta'] %}
+<hr/>
+{% for nro, field, value in data['r_meta'] %}
+<a href="/poem?nro={{ nro }}">{{ nro }}</a>
+<b>{{ field }}:</b> {{ value | safe }} <br/>
+{% endfor %}
+{% endif %}
+</div>
+
+<div class="tab-pane container {% if data['r_verses'] and not data['r_meta'] and not data['r_types'] %}active{% else %}fade{% endif %}" id="verses">
+{% if data['r_verses'] %}
+<hr/>
+{% for nro, pos, text in data['r_verses'] %}
+<a href="/poem?nro={{ nro }}&hl={{ pos }}#{{ pos }}">{{ nro }}</a>
+<sup><small>{{ pos }}</small></sup> {{ text | safe }}<br/>
+{% endfor %}
+{% endif %}
+</div>
+
+<div class="tab-pane container {% if data['r_inline'] and not data['r_meta'] and not data['r_types'] and not data['r_verses'] %}active{% else %}fade{% endif %}" id="inline">
+{% if data['r_inline'] %}
+<hr/>
+{% for nro, pos, text in data['r_inline'] %}
+<a href="/poem?nro={{ nro }}&hl={{ pos }}#{{ pos }}">{{ nro }}</a>
+<sup><small>{{ pos }}</small></sup> {{ text | safe }}<br/>
+{% endfor %}
+{% endif %}
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3"></div>
+
+</div>
+</div>
+
+</body>
+</html>

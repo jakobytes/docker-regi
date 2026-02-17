@@ -1,0 +1,117 @@
+<html>
+<head>
+<title>Poem network — Runoregi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" href="./static/css/style.css">
+<script lang="javascript" src="./static/js/jquery.min.js"></script>
+<script lang="javascript" src="./static/js/bootstrap.min.js"></script>
+<script
+    type="text/javascript"
+    src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"
+  ></script>
+</head>
+
+<body>
+
+{% if data['maintenance'] %}
+<div class="alert alert-warning" role="alert">
+<b>Warning!</b> A database update is ongoing. Some pages might not
+function properly.
+</div>
+{% endif %}
+
+<h1>Poem network</h1>
+
+<ul class="nav nav-pills">
+  <li role="presentation"><a role="button" href="/{% if args['nro'] | length > 1 %}multidiff{% else %}poem{% endif %}?nro={{ args['nro'] | join(',') }}">
+   <span class="glyphicon glyphicon-chevron-left"></span> Back to {% if args['nro'] | length > 1 %}alignment{% else %}poem{% endif %}
+  </a></li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Max. depth: {{ args['maxdepth'] }} <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['maxdepth'] %}
+    <li role="presentation"><a href="{{ links['maxdepth'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Max. nodes: {{ args['maxnodes'] }} <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['maxnodes'] %}
+    <li role="presentation"><a href="{{ links['maxnodes'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+  <li role="presentation" class="dropdown">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+      <span class="glyphicon glyphicon-cog"></span>
+      Threshold: {{ args['t'] }} <span class="caret"></span>
+    </a>
+   <ul class="dropdown-menu">
+    {% for val in links['t'] %}
+    <li role="presentation"><a href="{{ links['t'][val] }}">{{ val }}</a></li>
+    {% endfor %}
+   </ul>
+  </li>
+</ul>
+
+
+<div id="poemnet"></div>
+<script type="text/javascript">
+      // create an array with nodes
+      var nodes = new vis.DataSet([
+        {% for nro, p in data['poemnet']['nodes'].items() %}
+          { id: {{ p.nro | tojson }}, label: {{ p.smd.title | tojson }},
+            title: "{{ p.smd.place }}\n{{ p.smd.year }} {{ p.smd.collector }}\n"
+                   {% for line in p.type_tree %}
+				   + "\n{{ line.prefix | join('\u2003') }} {% if line['is_minor']%}*{% endif %}{{ data['types'][line.type_id].name }}"
+                   {% endfor %},
+            shape: "box", {% if p.nro in args['nro'] %}color: "#FFEEAA",{% endif %}
+            link: "/poem?nro={{ p.nro }}"},
+        {% endfor %}
+      ]);
+
+      // create an array with edges
+      var edges = new vis.DataSet([
+        {% for e in data['poemnet']['edges'] %}
+          { from: {{ e[0] | tojson }}, to: {{ e[1] | tojson }},
+            value: {{ e[2] }}, title: "{{ e[2] }}",
+            link: "/poemdiff?nro1={{ e[0] }}&nro2={{ e[1] }}" },
+        {% endfor %}
+      ]);
+
+      // create a network
+      var container = document.getElementById("poemnet");
+      var data = {
+        nodes: nodes,
+        edges: edges,
+      };
+      var options = { physics: { enabled: false }  };
+      var network = new vis.Network(container, data, options);
+      network.on("doubleClick", function (params) {
+        opened = false
+        for (n of nodes.get(params.nodes)) {
+          if (n.link) {
+            window.open(n.link)
+            opened = true
+            break
+          }
+        }
+        if (!opened) {
+            for (e of edges.get(params.edges)) {
+              if (e.link) {
+                window.open(e.link)
+              }
+            }
+        }
+      });
+    </script>
+</body>
+</html>
