@@ -32,11 +32,16 @@ fi
 
 # Wait for MariaDB to be ready
 echo "Waiting for MariaDB to start..."
-for i in {1..30}; do
-    if mysqladmin ping -h localhost --silent 2>/dev/null; then
-        echo "MariaDB is up!"
-        break
+SOCKET=/tmp/mysqld/mysqld.sock
+for i in {1..60}; do
+    # Check if socket file exists
+    if [ -S "$SOCKET" ]; then
+        if mysqladmin ping --socket=$SOCKET --silent 2>/dev/null; then
+            echo "MariaDB is up!"
+            break
+        fi
     fi
+    echo "Waiting... ($i/60)"
     sleep 1
 done
 
