@@ -4,18 +4,31 @@ set -e
 echo "Starting MariaDB..."
 
 # Create run directory for MariaDB in a writable location
-# Use /tmp if running as non-root (OpenShift)
 mkdir -p /tmp/mysqld
-chown mysql:mysql /tmp/mysqld
+
+# Get current user (for OpenShift non-root)
+CURRENT_USER=$(whoami)
+echo "Running as user: $CURRENT_USER"
 
 # Initialize MariaDB data directory if not exists
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     echo "Initializing MariaDB data directory..."
-    mysql_install_db --user=mysql --datadir=/var/lib/mysql
+    # Try to initialize as mysql user, fall back to current user
+    if id -u mysql &>/dev/null; then
+        mysql_install_db --user=mysql --datadir=/var/lib/mysql 2>/dev/null || \
+            mysql_install_db --user=$CURRENT_USER --datadir=/var/lib/mysql
+    else
+        mysql_install_db --user=$CURRENT_USER --datadir=/var/lib/mysql
+    fi
 fi
 
-# Start MariaDB with socket in /tmp (works with non-root)
-mysqld_safe --datadir=/var/lib/mysql --socket=/tmp/mysqld/mysqld.sock --user=mysql &
+# Start MariaDB - try mysql user first, then current user
+if id -u mysql &>/dev/null; then
+    chown mysql:mysql /tmp/mysqld 2>/dev/null || true
+    mysqld_safe --datadir=/var/lib/mysql --socket=/tmp/mysqld/mysqld.sock --user=mysql &
+else
+    mysqld_safe --datadir=/var/lib/mysql --socket=/tmp/mysqld/mysqld.sock --user=$CURRENT_USER &
+fi
 
 # Wait for MariaDB to be ready
 echo "Waiting for MariaDB to start..."
