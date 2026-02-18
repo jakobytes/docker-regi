@@ -2,6 +2,11 @@
 set -e
 
 echo "Starting MariaDB..."
+
+# Create run directory for MariaDB with proper permissions
+mkdir -p /run/mysqld
+chown mysql:mysql /run/mysqld
+
 # Initialize MariaDB data directory if not exists
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     echo "Initializing MariaDB data directory..."
