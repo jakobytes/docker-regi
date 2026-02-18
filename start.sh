@@ -33,7 +33,7 @@ fi
 # Wait for MariaDB to be ready
 echo "Waiting for MariaDB to start..."
 SOCKET=/tmp/mysqld/mysqld.sock
-for i in {1..60}; do
+for i in {1..120}; do
     # Check if socket file exists
     if [ -S "$SOCKET" ]; then
         if mysqladmin ping --socket=$SOCKET --silent 2>/dev/null; then
