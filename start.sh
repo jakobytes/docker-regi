@@ -13,37 +13,27 @@ echo "Running as user: $CURRENT_USER"
 # Initialize MariaDB data directory if not exists
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     echo "Initializing MariaDB data directory..."
-    # Try to initialize as mysql user, fall back to current user
-    if id -u mysql &>/dev/null; then
-        mysql_install_db --user=mysql --datadir=/var/lib/mysql 2>/dev/null || \
-            mysql_install_db --user=$CURRENT_USER --datadir=/var/lib/mysql
-    else
-        mysql_install_db --user=$CURRENT_USER --datadir=/var/lib/mysql
-    fi
+    # Initialize without --user flag (running as non-root)
+    mysql_install_db --datadir=/var/lib/mysql
 fi
 
 # Start MariaDB directly (not mysqld_safe)
+# With PVC mounted to /var/lib/mysql, this should work as non-root
 SOCKET=/tmp/mysqld/mysqld.sock
 DATADIR=/var/lib/mysql
 
-if id -u mysql &>/dev/null; then
-    chown mysql:mysql /tmp/mysqld 2>/dev/null || true
-    # Run mysqld in background
-    mysqld \
-        --datadir=$DATADIR \
-        --socket=$SOCKET \
-        --user=mysql \
-        --bind-address=127.0.0.1 \
-        &
-else
-    # Run as current user
-    mysqld \
-        --datadir=$DATADIR \
-        --socket=$SOCKET \
-        --user=$CURRENT_USER \
-        --bind-address=127.0.0.1 \
-        &
-fi
+# Create run directory
+mkdir -p /tmp/mysqld
+
+# Run mysqld as current user (no --user flag for non-root)
+mysqld \
+    --datadir=$DATADIR \
+    --socket=$SOCKET \
+    --bind-address=127.0.0.1 \
+    &
+
+MARIADB_PID=$!
+echo "MariaDB started with PID $MARIADB_PID"
 
 echo "MariaDB starting..."
 
