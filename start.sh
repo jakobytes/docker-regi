@@ -3,51 +3,26 @@ set -e
 
 echo "Starting MariaDB..."
 
-# Create run directory for MariaDB in a writable location
-mkdir -p /tmp/mysqld
-
-# Get current user (for OpenShift non-root)
-CURRENT_USER=$(whoami)
-echo "Running as user: $CURRENT_USER"
+# Create run directory for MariaDB
+mkdir -p /run/mysqld
+chown mysql:mysql /run/mysqld
 
 # Initialize MariaDB data directory if not exists
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     echo "Initializing MariaDB data directory..."
-    # Initialize without --user flag (running as non-root)
-    mysql_install_db --datadir=/var/lib/mysql
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql
 fi
 
-# Start MariaDB directly (not mysqld_safe)
-# With PVC mounted to /var/lib/mysql, this should work as non-root
-SOCKET=/tmp/mysqld/mysqld.sock
-DATADIR=/var/lib/mysql
-
-# Create run directory
-mkdir -p /tmp/mysqld
-
-# Run mysqld as current user (no --user flag for non-root)
-mysqld \
-    --datadir=$DATADIR \
-    --socket=$SOCKET \
-    --bind-address=127.0.0.1 \
-    &
-
-MARIADB_PID=$!
-echo "MariaDB started with PID $MARIADB_PID"
-
-echo "MariaDB starting..."
+# Start MariaDB in background
+mysqld_safe --datadir=/var/lib/mysql --user=mysql &
 
 # Wait for MariaDB to be ready
 echo "Waiting for MariaDB to start..."
-for i in {1..600}; do
-    # Check if socket file exists
-    if [ -S "$SOCKET" ]; then
-        if mysqladmin ping --socket=$SOCKET --silent 2>/dev/null; then
-            echo "MariaDB is up!"
-            break
-        fi
+for i in {1..60}; do
+    if mysqladmin ping -h localhost --silent 2>/dev/null; then
+        echo "MariaDB is up!"
+        break
     fi
-    echo "Waiting... ($((i/60)) min $((i%60)) sec)"
     sleep 1
 done
 

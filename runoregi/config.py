@@ -5,14 +5,18 @@ import re
 import warnings
 
 
+# Build MySQL connection parameters
 MYSQL_PARAMS = {
     'host' : os.getenv('DB_HOST'),
     'port' : int(os.getenv('DB_PORT')),
     'user' : os.getenv('DB_USER'),
     'password' : os.getenv('DB_PASS'),
     'database' : os.getenv('DB_NAME'),
-    'unix_socket' : os.getenv('DB_SOCKET')
 }
+
+# Add socket if DB_SOCKET is set (for non-standard setups)
+if os.getenv('DB_SOCKET'):
+    MYSQL_PARAMS['unix_socket'] = os.getenv('DB_SOCKET')
 
 VISUALIZATIONS_URL = os.getenv('VISUALIZATIONS_URL')
 

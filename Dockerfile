@@ -38,7 +38,6 @@ ENV DB_PORT=3306
 ENV DB_NAME=runoregi
 ENV DB_USER=runoregi
 ENV DB_PASS=
-ENV DB_SOCKET=/tmp/mysqld/mysqld.sock
 
 # Create app directory
 WORKDIR /app

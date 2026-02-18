@@ -14,8 +14,8 @@ fi
 
 echo "Setting up database..."
 
-# Create database and user (use socket in /tmp for non-root)
-mysql -u root --socket=/tmp/mysqld/mysqld.sock <<EOF
+# Create database and user
+mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS ${DB_NAME};
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
@@ -23,7 +23,7 @@ FLUSH PRIVILEGES;
 EOF
 
 # Check if database is already initialized (has tables)
-TABLES=$(mysql -u root --socket=/tmp/mysqld/mysqld.sock -D ${DB_NAME} -s -N -e "SHOW TABLES;" 2>/dev/null || true)
+TABLES=$(mysql -u root -D ${DB_NAME} -s -N -e "SHOW TABLES;" 2>/dev/null || true)
 
 if [ -z "$TABLES" ]; then
     echo "Database is empty, importing data..."
@@ -31,7 +31,7 @@ if [ -z "$TABLES" ]; then
     # Import data if SQL file exists
     if [ -f "/app/runoregi/database.sql" ]; then
         echo "Importing database.sql..."
-        mysql -u root --socket=/tmp/mysqld/mysqld.sock ${DB_NAME} < /app/runoregi/database.sql
+        mysql -u root ${DB_NAME} < /app/runoregi/database.sql
     else
         echo "No database.sql found - database will need manual setup"
     fi
