@@ -3,9 +3,10 @@ set -e
 
 echo "Starting MariaDB..."
 
-# Create run directory for MariaDB with proper permissions
-mkdir -p /run/mysqld
-chown mysql:mysql /run/mysqld
+# Create run directory for MariaDB in a writable location
+# Use /tmp if running as non-root (OpenShift)
+mkdir -p /tmp/mysqld
+chown mysql:mysql /tmp/mysqld
 
 # Initialize MariaDB data directory if not exists
 if [ ! -d "/var/lib/mysql/mysql" ]; then
@@ -13,8 +14,8 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     mysql_install_db --user=mysql --datadir=/var/lib/mysql
 fi
 
-# Start MariaDB in background
-mysqld_safe --datadir=/var/lib/mysql --user=mysql &
+# Start MariaDB with socket in /tmp (works with non-root)
+mysqld_safe --datadir=/var/lib/mysql --socket=/tmp/mysqld/mysqld.sock --user=mysql &
 
 # Wait for MariaDB to be ready
 echo "Waiting for MariaDB to start..."
