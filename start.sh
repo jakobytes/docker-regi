@@ -22,17 +22,33 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     fi
 fi
 
-# Start MariaDB - try mysql user first, then current user
+# Start MariaDB directly (not mysqld_safe)
+SOCKET=/tmp/mysqld/mysqld.sock
+DATADIR=/var/lib/mysql
+
 if id -u mysql &>/dev/null; then
     chown mysql:mysql /tmp/mysqld 2>/dev/null || true
-    mysqld_safe --datadir=/var/lib/mysql --socket=/tmp/mysqld/mysqld.sock --user=mysql &
+    # Run mysqld in background
+    mysqld \
+        --datadir=$DATADIR \
+        --socket=$SOCKET \
+        --user=mysql \
+        --bind-address=127.0.0.1 \
+        &
 else
-    mysqld_safe --datadir=/var/lib/mysql --socket=/tmp/mysqld/mysqld.sock --user=$CURRENT_USER &
+    # Run as current user
+    mysqld \
+        --datadir=$DATADIR \
+        --socket=$SOCKET \
+        --user=$CURRENT_USER \
+        --bind-address=127.0.0.1 \
+        &
 fi
+
+echo "MariaDB starting..."
 
 # Wait for MariaDB to be ready
 echo "Waiting for MariaDB to start..."
-SOCKET=/tmp/mysqld/mysqld.sock
 for i in {1..600}; do
     # Check if socket file exists
     if [ -S "$SOCKET" ]; then
