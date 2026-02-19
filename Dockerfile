@@ -52,4 +52,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
 # Start gunicorn
-CMD ["gunicorn", "--config", "runoregi/gunicorn.conf.py", "runoregi.wsgi:application", "--bind", "0.0.0.0:8000"]
+ENV PORT=8000
+CMD ["gunicorn", "--config", "runoregi/gunicorn.conf.py", "runoregi.wsgi:application", "--bind", "0.0.0.0:${PORT}"]
