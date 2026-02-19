@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=wsgi.py
+ENV PYTHONPATH=/app/runoregi
 
 # Database configuration - set these when running the container
 ENV DB_HOST=localhost
