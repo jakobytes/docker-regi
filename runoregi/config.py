@@ -18,6 +18,14 @@ MYSQL_PARAMS = {
 if os.getenv('DB_SOCKET'):
     MYSQL_PARAMS['unix_socket'] = os.getenv('DB_SOCKET')
 
+# Add SSL if DB_SSL is set
+if os.getenv('DB_SSL'):
+    # Disable SSL verification if DB_SSL_VERIFY is set to '0'
+    if os.getenv('DB_SSL_VERIFY') == '0':
+        MYSQL_PARAMS['ssl'] = {'verify_server_cert': False}
+    else:
+        MYSQL_PARAMS['ssl'] = {'ca': os.getenv('DB_SSL_CA', '/etc/ssl/certs/ca-certificates.crt')}
+
 VISUALIZATIONS_URL = os.getenv('VISUALIZATIONS_URL')
 
 SEARCH_LIMIT = 1000
