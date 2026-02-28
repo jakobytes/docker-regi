@@ -1,0 +1,61 @@
+type_id,type_name,type_description,type_parent_id
+kt_t000000,0. Uudempia Lauluja,,
+kt_t010000,1. Yhteisiä Lauluja,,
+kt_t010100,I. Kaikille yhteisiä,,kt_t010000
+kt_t010200,II. Hääkansan lauluja,,kt_t010000
+kt_t010201,a) Antiaisissa,,kt_t010200
+kt_t010202,b) Häissä,,kt_t010200
+kt_t010300,III. Paimenlauluja,,kt_t010000
+kt_t010400,IV. Lasten lauluja,,kt_t010000
+kt_t020000,2. Erityisiä Lauluja,,
+kt_t020100,I. Tyttöin lauluja,,kt_t020000
+kt_t020101,Laulutiloissa,,kt_t020100
+kt_t020102,Tansseissa ja kisoissa,,kt_t020100
+kt_t020103,Kerskatessa,,kt_t020100
+kt_t020104,Poikia herjatessa,,kt_t020100
+kt_t020105,Sulhoaan ikävöiessä,,kt_t020100
+kt_t020106,Sulhon kuoltua,,kt_t020100
+kt_t020107,Sulholta heitettynä,,kt_t020100
+kt_t020108,Sulhotonna,,kt_t020100
+kt_t020109,Sulhoa toivoessa,,kt_t020100
+kt_t020110,Ko'ista erotessa,,kt_t020100
+kt_t020111,Sanan-alaisna,,kt_t020100
+kt_t020112,Suru,,kt_t020100
+kt_t020113,Orjuuessa,,kt_t020100
+kt_t020114,Orpona,,kt_t020100
+kt_t020115,Köyhänä ja vähäonnisena,,kt_t020100
+kt_t020116,Vieraalla maalla,,kt_t020100
+kt_t020117,Kuolla toivoessa,,kt_t020100
+kt_t020118,Pilattuna,,kt_t020100
+kt_t020119,Nimittämättömissä huolissa,,kt_t020100
+kt_t020120,Jauhaessa,,kt_t020100
+kt_t020121,Yhtä ja toista,,kt_t020100
+kt_t020200,II. Naisten lauluja,,kt_t020000
+kt_t020201,a) Miniänä,,kt_t020200
+kt_t020202,b) Lasta tuuvittaissa,,kt_t020200
+kt_t020203,c) Miestään arvatessa,,kt_t020200
+kt_t020204,d) Muissa tiloissa,,kt_t020200
+kt_t020300,III. Poikien lauluja,,kt_t020000
+kt_t020301,Tansseissa ja muissa tiloissa,,kt_t020300
+kt_t020302,Naimatuumissa,,kt_t020300
+kt_t020303,Osattomana,,kt_t020300
+kt_t020304,Pahasti elettyä,,kt_t020300
+kt_t020305,Sorrettuna,,kt_t020300
+kt_t020306,Morsiamesta jäätyä,,kt_t020300
+kt_t020307,Ko'ista erotessa,,kt_t020300
+kt_t020308,Vierailla mailla,,kt_t020300
+kt_t020400,IV. Miesten lauluja,,kt_t020000
+kt_t020401,Laulellessa,,kt_t020400
+kt_t020402,Sananalaisna,,kt_t020400
+kt_t020403,Huolissa,,kt_t020400
+kt_t020404,Vähäonnisena,,kt_t020400
+kt_t020405,Vierailla mailla,,kt_t020400
+kt_t020406,Eritiloissa,,kt_t020400
+kt_t020407,Pahanaisellisna.,,kt_t020400
+kt_t020408,Entisiä muistellessa,,kt_t020400
+kt_t020409,Sota-aikoina,,kt_t020400
+kt_t020410,Metsästäessä,,kt_t020400
+kt_t030000,3. Virsi-Lauluja,,
+kt_t030100,I. Muinais-uskoisia,,kt_t030000
+kt_t030200,II. Historiallisia,,kt_t030000
+kt_t030300,III. Tarusekaisia,,kt_t030000
