@@ -1,63 +1,29 @@
-# Elias-1848 OpenShift Deployment - Checkpoint
+# Volkslieder Deployment - Checkpoint
 
-## Current Status
-- ✅ Docker image builds successfully with app-only (no MariaDB)
-- ✅ Code pushed to GitHub
-- ✅ OpenShift deployment created
-- ❌ Database connection failing - firewall/network issue
+## Local Development Status
+- ✅ Docker image builds successfully with both apps (no MariaDB)
+- ✅ runoregi app working on port 8000 with database connection
+- ✅ filter-visualizations Shiny app working on port 3838
 
-## What Works
-1. **Docker Image**: Successfully builds `elias-1848:latest` from `Dockerfile` (app-only version without MariaDB)
-2. **App Running**: Gunicorn starts successfully on port 8080 in the container
-3. **OpenShift Build**: Builds from GitHub using the app-only Dockerfile
-4. **Routing**: Service and Route created, accessible at `web2-elias-1848.2.rahtiapp.fi`
-
-## Issues Encountered
-
-### 1. Database Connection - FAILED
-**Problem**: Cannot connect to Pukki database from OpenShift pods
-
-**Attempted Solutions**:
-- Used private IP (192.168.216.202) - Timed out
-- Used public IP (86.50.253.238) - Timed out  
-- Firewall whitelisted specific host IPs (192.168.2.192, 192.168.3.62) - Pods moved between nodes, IP changed
-- OpenShift pod IPs change when pods restart/migrate between nodes
-
-**Root Cause**: 
-- Database firewall only allows specific IPs
-- OpenShift cluster IPs are dynamic
-- Neither private nor public database IPs are reachable from OpenShift pods
-
-### 2. Non-root Container - FIXED
-- Added `git` package to Dockerfile
-- Changed port from 8000 to 8080 for non-root compatibility  
-- Added `PYTHONPATH=/app/runoregi` for module imports
-- Changed CMD to use shell form for environment variable expansion
-
-### 3. Secret Management - Working
-- Secret `elias` created with database credentials
-- Environment variables correctly injected into pods
+## What Works (Local)
+1. **Docker Image**: Successfully builds `volkslieder:test` with both runoregi and filter-visualizations
+2. **runoregi**: Gunicorn serves data from vldl database on port 8000
+3. **filter-visualizations**: Shiny server running on port 3838
+4. **Database**: Connected to vldl database with SSL support
 
 ## Files Changed
-- `Dockerfile` - App-only version (renamed from Dockerfile.app)
-- `Dockerfile.old` - Original with MariaDB (kept for reference)
+- `Dockerfile` - Combined Python/R Docker image for both apps
+- `start-both.sh` - Startup script for gunicorn + shiny-server
+- `filter-visualizations/R/data.R` - Fixed RMariaDB connection (username vs user param)
 
-## Next Steps (When Network Issue is Resolved)
-1. Update secret with correct DB_HOST when solution is found
-2. Ensure database credentials are correct
-3. Test connection and verify app works
+## Usage
+```bash
+# Build the image
+docker build -t volkslieder:test .
 
-## Potential Solutions to Explore
-1. **Ask CSC for OpenShift IP range** - Whitelist entire cluster pod network
-2. **Use internal load balancer** - CSC to create internal endpoint
-3. **VPN solution** - Connect OpenShift to database network via VPN
-4. **Database in OpenShift** - Host MariaDB in same OpenShift project
+# Create .env with database credentials
+# (see DEPLOYMENT_INSTRUCTIONS.md for required variables)
 
-## Current Secret Configuration
-```
-DB_HOST=86.50.253.238 (needs update when solution found)
-DB_PORT=3306
-DB_USER=Elias-1848  
-DB_NAME=elias
-DB_PASS=<password>
+# Run
+docker run -d --name volkslieder -p 8000:8000 -p 3838:3838 --env-file .env volkslieder:test
 ```
