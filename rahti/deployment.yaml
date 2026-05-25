@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: volkslieder
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"volkslieder:latest"},
+        "fieldPath":"spec.template.spec.containers[?(@.name==\"volkslieder\")].image",
+        "pause":"false"}]
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: volkslieder
+  template:
+    metadata:
+      labels:
+        app: volkslieder
+    spec:
+      containers:
+        - name: volkslieder
+          image: volkslieder:latest
+          ports:
+            - containerPort: 8000
+              name: runoregi
+            - containerPort: 3838
+              name: shiny
+          envFrom:
+            - secretRef:
+                name: volkslieder-db
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "400m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"

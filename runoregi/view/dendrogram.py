@@ -92,7 +92,7 @@ def transform_vert(dd, n, nros):
 @profile
 def render(**args):
     poems, types, target_type, inner = None, None, None, None
-    with pymysql.connect(**config.MYSQL_PARAMS).cursor() as db:
+    with config.get_db() as db:
         if args['source'] == 'type':
             target_type = Types(ids=[args['type_id']])
             target_type.get_descriptions(db)

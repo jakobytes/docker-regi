@@ -69,7 +69,7 @@ def get_by_type(db, type_id):
 @profile
 def render(**args):
     data = {}
-    with pymysql.connect(**config.MYSQL_PARAMS).cursor() as db:
+    with config.get_db() as db:
         if args['source'] == 'type':
             data = get_by_type(db, args['id'])
         elif args['source'] == 'collector':

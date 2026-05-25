@@ -1,0 +1,29 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: volkslieder-runoregi
+spec:
+  host: volks-regi.artificial-other.com
+  to:
+    kind: Service
+    name: volkslieder-runoregi
+  port:
+    targetPort: runoregi
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: volkslieder-shiny
+spec:
+  host: volks-shiny.artificial-other.com
+  to:
+    kind: Service
+    name: volkslieder-shiny
+  port:
+    targetPort: shiny
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

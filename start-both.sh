@@ -25,6 +25,7 @@ sleep 3
 # Start gunicorn for runoregi in background
 echo "Starting gunicorn on port 8000..."
 cd /app
+export HOME=/tmp
 PYTHONPATH=/app/runoregi gunicorn --config runoregi/gunicorn.conf.py runoregi.wsgi:application --bind 0.0.0.0:8000 &
 GUNICORN_PID=$!
 echo "Gunicorn started with PID $GUNICORN_PID"

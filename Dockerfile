@@ -80,7 +80,9 @@ COPY filter-visualizations/shiny-server.sh /usr/bin/shiny-server.sh
 COPY start-both.sh /usr/bin/start-both.sh
 RUN chmod a+x /usr/bin/start-both.sh && \
     mkdir -p /var/log/shiny-server && \
+    mkdir -p /var/lib/shiny-server && \
     chmod a+rwx /var/log/shiny-server && \
+    chmod a+rwx /var/lib/shiny-server && \
     chmod a+rwx /srv/shiny-server && \
     chmod a+rwx /usr/local/lib/R/site-library
 

@@ -83,6 +83,17 @@ docker logs <container-id>
 
 ---
 
+## Rahti (CSC OpenShift)
+
+See [`rahti/README.md`](rahti/README.md) for full instructions.
+
+Quick start (requires `oc` CLI and login):
+```bash
+rahti/deploy.sh --rebuild
+```
+
+---
+
 ## Security Notes
 
 1. **Never commit `.env` files** - use `.env.example` as template
