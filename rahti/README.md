@@ -62,11 +62,13 @@ Rahti enforces a maximum limit-to-request ratio of 5 per container.
 Current values: request `400m`, limit `2000m` (exactly 5×).
 Do not lower the request below `limit / 5` or pods will be forbidden.
 
-### CPU limits
-elias26 has no project-wide ResourceQuota, but a LimitRange caps each
-container at 4 CPU / 16Gi. (The old elias-1848 project had a 4-core quota.)
+### Project CPU quota is 4 cores
+elias26 has a cluster-level quota (`oc get appliedclusterresourcequota`, not
+visible with `oc get quota`) capping `limits.cpu` at 4 cores across all pods.
+`web2` (500m) + `volkslieder` (2000m) leave 1.5 cores for build pods and
+anything else, such as one-off data loading pods.
 The Deployment uses `strategy: Recreate` so rollouts kill the old pod first —
-a rolling update would need headroom for two pods simultaneously.
+a rolling update would need headroom for two pods simultaneously and exceeds quota.
 elias26 also runs the separate `web2` app; the `volkslieder*` resources don't
 collide with it.
 
