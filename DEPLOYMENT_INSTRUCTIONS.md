@@ -4,11 +4,8 @@ This document provides instructions for deploying the Volkslieder application.
 
 ## Overview
 
-The application consists of two services:
-- **Runoregi** (Flask/Gunicorn on port 8000)
-- **Filter-Visualizations** (Shiny Server on port 3838)
-
-Both services connect to the same external MySQL/MariaDB database.
+The application is **Runoregi** (Flask/Gunicorn on port 8000), connected to an
+external MySQL/MariaDB database.
 
 ## Prerequisites
 
@@ -31,13 +28,12 @@ Using the `.env` file:
 
 ```bash
 # Run with env file
-docker run --env-file .env -p 8000:8000 -p 3838:3838 volkslieder:latest
+docker run --env-file .env -p 8000:8000 volkslieder:latest
 ```
 
 ### Access
 
 - Runoregi: http://localhost:8000
-- Filter-Visualizations: http://localhost:3838
 
 ---
 
@@ -52,9 +48,9 @@ docker run --env-file .env -p 8000:8000 -p 3838:3838 volkslieder:latest
 | DB_USER | elias | Database user |
 | DB_PASS | | Database password |
 | DB_NAME | elias | Database name |
-| DB_SSL | false | Enable SSL for database connection |
+| DB_SSL | (unset) | Enable SSL for database connection (any non-empty value, including `false`, enables it) |
 | DB_SSL_VERIFY | 1 | Set to 0 to disable SSL certificate verification |
-| ENABLE_LOGGING_TO_DB | false | Enable database logging |
+| DB_LOGGING | (unset) | Enable logging of page requests to the `runoregi_log` table |
 
 ### SSL Configuration
 

@@ -1,23 +1,26 @@
 # Rahti Deployment
 
-Rahti is CSC's OKD 4 / OpenShift 4 platform. Project: **elias-1848**.
+Rahti is CSC's OKD 4 / OpenShift 4 platform. Project: **elias26**.
 
 ## Prerequisites
 
 ```bash
 # Install the oc CLI, then log in
 oc login https://api.2.rahti.csc.fi:6443
-oc project elias-1848
+oc project elias26
 ```
 
 ## First deployment
 
+The DB secret is created from an env file (default `.env`). For elias26 the
+database settings live in `.env.elias26` (`DB_NAME=livonia`):
+
 ```bash
-rahti/deploy.sh --rebuild
+ENV_FILE=.env.elias26 rahti/deploy.sh --rebuild
 ```
 
 This will:
-1. Create/replace the `volkslieder-db` Secret from `.env`
+1. Create/replace the `volkslieder-db` Secret from `$ENV_FILE`
 2. Apply all manifests (ImageStream, BuildConfig, Deployment, Services, Routes)
 3. Upload the local repo as a binary build source and build the image in the cluster
 4. The image trigger annotation on the Deployment rolls out the new image automatically
@@ -38,8 +41,7 @@ rahti/deploy.sh
 
 | Service | URL |
 |---------|-----|
-| Runoregi | https://volkslieder-runoregi-elias-1848.2.rahtiapp.fi |
-| Shiny | https://volkslieder-shiny-elias-1848.2.rahtiapp.fi |
+| Runoregi | https://volkslieder-runoregi-elias26.2.rahtiapp.fi |
 
 ## Manifest overview
 
@@ -47,9 +49,9 @@ rahti/deploy.sh
 |------|---------|
 | `imagestream.yaml` | Stores the built image inside the cluster |
 | `buildconfig.yaml` | Binary Docker build — source uploaded via `oc start-build` |
-| `deployment.yaml` | Single pod running both Runoregi and Shiny |
-| `services.yaml` | ClusterIP services for port 8000 and 3838 |
-| `routes.yaml` | HTTPS edge-terminated routes for both services |
+| `deployment.yaml` | Single pod running Runoregi |
+| `services.yaml` | ClusterIP service for port 8000 |
+| `routes.yaml` | HTTPS edge-terminated route for Runoregi |
 
 ---
 
@@ -60,17 +62,15 @@ Rahti enforces a maximum limit-to-request ratio of 5 per container.
 Current values: request `400m`, limit `2000m` (exactly 5×).
 Do not lower the request below `limit / 5` or pods will be forbidden.
 
-### Project CPU quota is 4 cores
-The elias-1848 project quota is 4 CPU cores total.  
+### CPU limits
+elias26 has no project-wide ResourceQuota, but a LimitRange caps each
+container at 4 CPU / 16Gi. (The old elias-1848 project had a 4-core quota.)
 The Deployment uses `strategy: Recreate` so rollouts kill the old pod first —
-a rolling update would need headroom for two pods simultaneously and exceeds quota.
-
-### `/var/lib/shiny-server` must be world-writable
-Shiny Server creates `bookmarks/` under `/var/lib/shiny-server` on startup.
-OpenShift runs containers as a random non-root UID, so the Dockerfile explicitly
-creates this directory and sets `chmod a+rwx` on it.
+a rolling update would need headroom for two pods simultaneously.
+elias26 also runs the separate `web2` app; the `volkslieder*` resources don't
+collide with it.
 
 ### Gunicorn control socket needs a writable HOME
 Gunicorn places its control socket at `$HOME/.gunicorn`.
 Under OpenShift's random UID there is no home directory, so `$HOME` defaults to `/`
-which is not writable. `start-both.sh` exports `HOME=/tmp` before starting gunicorn.
+which is not writable. The Dockerfile sets `HOME=/tmp`.

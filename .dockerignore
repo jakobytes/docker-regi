@@ -1,4 +1,3 @@
-.git
-filter-visualizations
-rahti
-*.md
+*
+!runoregi
+**/__pycache__
